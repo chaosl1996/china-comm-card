@@ -37,7 +37,7 @@ scp china-comm-card.js homeassistant@10.0.0.3:/config/www/
 
 3. 强制刷新浏览器（Ctrl/Cmd + Shift + R）
 
-   > 若更新版本后仍显示旧版，多半是浏览器缓存：把资源 URL 改为 `/local/china-comm-card.js?v=1.4.1`（每次更新递增 `v`），或在浏览器控制台确认横幅显示 `CHINA-COMM-CARD v1.4.1`。
+   > 若更新版本后仍显示旧版，多半是浏览器缓存：把资源 URL 改为 `/local/china-comm-card.js?v=1.4.2`（每次更新递增 `v`），或在浏览器控制台确认横幅显示 `CHINA-COMM-CARD v1.4.2`。
 
 之后在仪表盘添加卡片时选择「移动运营商信息卡片」即可进入 **可视化编辑器**：
 

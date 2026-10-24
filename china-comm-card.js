@@ -3,7 +3,7 @@
  * 适配 HACS 集成「移动运营商」(sfairy/ha_china_comm)
  * 纯原生 Web Component，无第三方依赖，自动适配明暗主题，支持 UI 可视化配置
  */
-const CARD_VERSION = '1.4.1';
+const CARD_VERSION = '1.4.2';
 console.info(
   `%c CHINA-COMM-CARD %c v${CARD_VERSION} `,
   'background:#0b6ef3;color:#fff;border-radius:3px 0 0 3px;padding:2px 6px;',
@@ -343,19 +343,19 @@ class ChinaCommCard extends HTMLElement {
           <div class="acc-badges">${badge}<span class="dot ${onlineOk ? 'ok' : 'bad'}" title="${esc(ents.online?.state || '状态未知')}"></span></div>
         </div>
         <div class="hero">
-          <div class="hero-item">
-            <div class="hero-label">话费余额</div>
-            <div class="hero-value ${owe ? 'danger' : ''}">${fmt2(balVal) ?? '--'}<span class="hero-unit">元</span></div>
+          <div class="bal-row">
+            <span class="hero-label">话费余额</span>
+            <span class="hero-value ${owe ? 'danger' : ''}">${fmt2(balVal) ?? '--'}<span class="hero-unit">元</span></span>
           </div>
           ${spend != null ? `
-          <div class="hero-item">
-            <div class="hero-label">本月消费</div>
-            <div class="hero-value">${fmt2(spend)}<span class="hero-unit">元</span></div>
+          <div class="bal-row">
+            <span class="hero-label">本月消费</span>
+            <span class="hero-sub">${fmt2(spend)}<span class="hero-unit">元</span></span>
           </div>` : ''}
           ${carry != null ? `
-          <div class="hero-item">
-            <div class="hero-label">上月结转</div>
-            <div class="hero-value small">${fmt(carry)}<span class="hero-unit">元</span></div>
+          <div class="bal-row">
+            <span class="hero-label">上月结转</span>
+            <span class="hero-sub">${fmt(carry)}<span class="hero-unit">元</span></span>
           </div>` : ''}
         </div>
         ${gaugesHtml}
@@ -412,10 +412,11 @@ class ChinaCommCard extends HTMLElement {
         .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ccc-secondary); flex: none; }
         .dot.ok { background: var(--ccc-success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ccc-success) 20%, transparent); }
         .dot.bad { background: var(--ccc-danger); }
-        .hero { display: flex; align-items: flex-end; gap: 20px; padding: 4px 0 10px; flex-wrap: wrap; }
-        .hero-label { font-size: 10px; color: var(--ccc-secondary); margin-bottom: 2px; }
-        .hero-value { font-size: 26px; font-weight: 700; line-height: 1; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
-        .hero-value.small { font-size: 18px; font-weight: 600; color: var(--ccc-secondary); }
+        .hero { display: grid; gap: 4px; padding: 2px 0 10px; }
+        .bal-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+        .hero-label { font-size: 11px; color: var(--ccc-secondary); }
+        .hero-value { font-size: 24px; font-weight: 700; line-height: 1.1; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+        .hero-sub { font-size: 14px; font-weight: 600; color: var(--ccc-text); font-variant-numeric: tabular-nums; }
         .hero-value.danger { color: var(--ccc-danger); }
         .hero-unit { font-size: 11px; font-weight: 500; color: var(--ccc-secondary); margin-left: 3px; }
         .rings { display: flex; justify-content: space-around; gap: 8px; padding: 2px 0 6px; }
