@@ -3,7 +3,7 @@
  * 适配 HACS 集成「移动运营商」(sfairy/ha_china_comm)
  * 纯原生 Web Component，无第三方依赖，自动适配明暗主题，支持 UI 可视化配置
  */
-const CARD_VERSION = '1.4.2';
+const CARD_VERSION = '1.5.0';
 console.info(
   `%c CHINA-COMM-CARD %c v${CARD_VERSION} `,
   'background:#0b6ef3;color:#fff;border-radius:3px 0 0 3px;padding:2px 6px;',
@@ -33,6 +33,7 @@ const DEFAULTS = {
   title: '',
   style: 'brand',
   mask_phone: true,
+  balance: { show: true, spend: true, carry: true },
   gauges: { style: 'ring', data: true, voice: true },
   show_members: true,
   show_history: true,
@@ -42,6 +43,7 @@ const DEFAULTS = {
 const withDefaults = (cfg) => {
   const c = { ...DEFAULTS, ...(cfg || {}) };
   c.style = STYLE_KEYS.includes(cfg?.style) ? cfg.style : DEFAULTS.style;
+  c.balance = { ...DEFAULTS.balance, ...(cfg?.balance || {}) };
   c.gauges = { ...DEFAULTS.gauges, ...(cfg?.gauges || {}) };
   c.chips = { ...DEFAULTS.chips, ...(cfg?.chips || {}) };
   if (cfg?.show_chips !== undefined && cfg?.chips === undefined) c.chips.show = cfg.show_chips;
@@ -210,7 +212,6 @@ class ChinaCommCard extends HTMLElement {
     const balVal = num(bal?.state);
     const bAttr = bal?.attributes || {};
     const owe = bAttr['是否欠费'] === '是' || (balVal != null && balVal < 0);
-    const oweAmt = num(bAttr['欠费金额']);
     const spend = num(bAttr['本月消费']) ?? num(bAttr['本月已消费']) ?? num(ents.charge?.state);
     const carry = num(bAttr['上月结转']);
 
@@ -227,7 +228,7 @@ class ChinaCommCard extends HTMLElement {
     const vPct = vTotal ? vUsed / vTotal : null;
 
     const badge = owe
-      ? `<span class="badge danger">欠费 ${oweAmt != null ? fmt2(oweAmt) : ''} 元</span>`
+      ? `<span class="badge danger">欠费</span>`
       : ents.status?.state === '正常'
         ? `<span class="badge ok">正常</span>`
         : ents.status?.state
@@ -342,22 +343,23 @@ class ChinaCommCard extends HTMLElement {
           </div>
           <div class="acc-badges">${badge}<span class="dot ${onlineOk ? 'ok' : 'bad'}" title="${esc(ents.online?.state || '状态未知')}"></span></div>
         </div>
+        ${cfg.balance?.show !== false ? `
         <div class="hero">
           <div class="bal-row">
             <span class="hero-label">话费余额</span>
             <span class="hero-value ${owe ? 'danger' : ''}">${fmt2(balVal) ?? '--'}<span class="hero-unit">元</span></span>
           </div>
-          ${spend != null ? `
+          ${cfg.balance?.spend !== false && spend != null ? `
           <div class="bal-row">
             <span class="hero-label">本月消费</span>
             <span class="hero-sub">${fmt2(spend)}<span class="hero-unit">元</span></span>
           </div>` : ''}
-          ${carry != null ? `
+          ${cfg.balance?.carry !== false && carry != null ? `
           <div class="bal-row">
             <span class="hero-label">上月结转</span>
             <span class="hero-sub">${fmt(carry)}<span class="hero-unit">元</span></span>
           </div>` : ''}
-        </div>
+        </div>` : ''}
         ${gaugesHtml}
         ${membersHtml}
         ${historyHtml}
@@ -479,45 +481,71 @@ class ChinaCommCard extends HTMLElement {
 }
 
 // ==================== UI 可视化配置编辑器 ====================
-const EDITOR_SCHEMA = [
-  { name: 'title', label: '标题', selector: { text: {} } },
+const EDITOR_SECTIONS = [
   {
-    name: 'style', label: '外观风格', selector: {
-      select: {
-        options: [
-          { value: 'brand', label: '品牌卡头' },
-          { value: 'minimal', label: '极简主题' },
-          { value: 'accent', label: '运营商点缀' },
-          { value: 'classic', label: '经典环形' },
+    title: '外观',
+    schema: [
+      { name: 'title', label: '标题', selector: { text: {} } },
+      {
+        name: 'style', label: '外观风格', selector: {
+          select: {
+            options: [
+              { value: 'brand', label: '品牌卡头' },
+              { value: 'minimal', label: '极简主题' },
+              { value: 'accent', label: '运营商点缀' },
+              { value: 'classic', label: '经典环形' },
+            ],
+          },
+        },
+      },
+      { name: 'mask_phone', label: '号码脱敏', selector: { boolean: {} } },
+    ],
+  },
+  {
+    title: '余额展示',
+    schema: [
+      {
+        name: 'balance', label: '余额展示', type: 'grid', schema: [
+          { name: 'show', label: '话费余额', selector: { boolean: {} } },
+          { name: 'spend', label: '本月消费', selector: { boolean: {} } },
+          { name: 'carry', label: '上月结转', selector: { boolean: {} } },
         ],
       },
-    },
-  },
-  {
-    name: 'gauges', label: '用量图', type: 'grid', schema: [
-      { name: 'style', label: '样式', selector: { select: { options: [{ value: 'ring', label: '环形图' }, { value: 'bar', label: '进度条' }] } } },
-      { name: 'data', label: '显示流量', selector: { boolean: {} } },
-      { name: 'voice', label: '显示通话', selector: { boolean: {} } },
     ],
   },
-  { name: 'show_members', label: '显示共享流量池成员', selector: { boolean: {} } },
-  { name: 'show_history', label: '显示近月出账', selector: { boolean: {} } },
   {
-    name: 'chips', label: '信息标签', type: 'grid', schema: [
-      { name: 'show', label: '显示标签', selector: { boolean: {} } },
-      { name: 'net', label: '网络制式', selector: { boolean: {} } },
-      { name: 'sim', label: '副卡数量', selector: { boolean: {} } },
-      { name: 'broadband', label: '宽带', selector: { boolean: {} } },
-      { name: 'level', label: '会员等级', selector: { boolean: {} } },
-      { name: 'points', label: '积分', selector: { boolean: {} } },
-      { name: 'calls', label: '通话次数', selector: { boolean: {} } },
+    title: '用量图',
+    schema: [
+      {
+        name: 'gauges', label: '用量图', type: 'grid', schema: [
+          { name: 'style', label: '样式', selector: { select: { options: [{ value: 'ring', label: '环形图' }, { value: 'bar', label: '进度条' }] } } },
+          { name: 'data', label: '剩余流量', selector: { boolean: {} } },
+          { name: 'voice', label: '剩余通话', selector: { boolean: {} } },
+        ],
+      },
     ],
   },
-  { name: 'mask_phone', label: '号码脱敏', selector: { boolean: {} } },
   {
-    name: 'accounts', label: '账号', type: 'list', schema: [
-      { name: 'phone', label: '手机号', selector: { text: {} } },
-      { name: 'name', label: '显示名（可选）', selector: { text: {} } },
+    title: '附加信息',
+    schema: [
+      { name: 'show_members', label: '共享流量池成员', selector: { boolean: {} } },
+      { name: 'show_history', label: '近月出账', selector: { boolean: {} } },
+    ],
+  },
+  {
+    title: '信息标签',
+    schema: [
+      {
+        name: 'chips', label: '信息标签', type: 'grid', schema: [
+          { name: 'show', label: '显示标签', selector: { boolean: {} } },
+          { name: 'net', label: '网络制式', selector: { boolean: {} } },
+          { name: 'sim', label: '副卡数量', selector: { boolean: {} } },
+          { name: 'broadband', label: '宽带', selector: { boolean: {} } },
+          { name: 'level', label: '会员等级', selector: { boolean: {} } },
+          { name: 'points', label: '积分', selector: { boolean: {} } },
+          { name: 'calls', label: '通话次数', selector: { boolean: {} } },
+        ],
+      },
     ],
   },
 ];
@@ -525,89 +553,119 @@ const EDITOR_SCHEMA = [
 class ChinaCommCardEditor extends HTMLElement {
   setConfig(config) {
     this._config = withDefaults(config || {});
-    if (!this._form) this._init();
-    if (this._form.data !== this._config) {
-      this._form.data = this._config;
-    }
+    if (!this._wrap) this._init();
+    this._forms.forEach((f) => {
+      if (f.data !== this._config) f.data = this._config;
+    });
     this._updatePicker();
   }
 
   set hass(hass) {
     this._hass = hass;
-    if (this._form) this._form.hass = hass;
+    if (this._forms) this._forms.forEach((f) => { f.hass = hass; });
     this._updatePicker();
   }
 
+  _emit(config) {
+    this._config = config;
+    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config }, bubbles: true, composed: true }));
+  }
+
   _init() {
+    const style = document.createElement('style');
+    style.textContent = `
+      .ccc-editor .sec-title { font-size: 12px; font-weight: 600; color: var(--secondary-text-color,#6b7280); letter-spacing: .05em; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--divider-color,rgba(0,0,0,.08)); }
+      .ccc-editor .sec-title.first { margin-top: 0; }
+      .ccc-editor .acc-add { display: flex; gap: 8px; margin: 0 0 10px; }
+      .ccc-editor .acc-add select { flex: 1; min-width: 0; padding: 7px 8px; border-radius: 8px; font-size: 13px; border: 1px solid var(--divider-color,rgba(0,0,0,.15)); background: var(--card-background-color,#fff); color: var(--primary-text-color,#1d2129); }
+      .ccc-editor .acc-add button { border: 1px solid var(--divider-color,rgba(0,0,0,.15)); background: transparent; color: var(--primary-color,#03a9f4); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+      .ccc-editor .acc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .ccc-editor .acc-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 6px 4px 10px; border-radius: 14px; background: var(--secondary-background-color,rgba(0,0,0,.06)); color: var(--primary-text-color,#1d2129); }
+      .ccc-editor .acc-chip .rm { border: none; background: transparent; color: var(--secondary-text-color,#6b7280); cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 4px; border-radius: 50%; }
+      .ccc-editor .acc-chip .rm:hover { color: var(--error-color,#db4437); }
+      .ccc-editor .acc-empty { font-size: 12px; color: var(--secondary-text-color,#6b7280); }
+    `;
+
     const wrap = document.createElement('div');
+    wrap.className = 'ccc-editor';
 
-    const hint = document.createElement('div');
-    hint.textContent = '从「移动运营商」集成选择账号';
-    Object.assign(hint.style, {
-      fontSize: '12px', color: 'var(--secondary-text-color,#6b7280)', margin: '0 0 4px',
-    });
-
+    // —— 账号（自绘：下拉添加 + 标签删除） ——
+    const secAcc = document.createElement('div');
+    const tAcc = document.createElement('div');
+    tAcc.className = 'sec-title first';
+    tAcc.textContent = '账号';
+    const addRow = document.createElement('div');
+    addRow.className = 'acc-add';
     const sel = document.createElement('select');
-    Object.assign(sel.style, {
-      width: '100%', padding: '7px 8px', borderRadius: '8px', fontSize: '13px',
-      border: '1px solid var(--divider-color,rgba(0,0,0,.15))',
-      background: 'var(--card-background-color,#fff)',
-      color: 'var(--primary-text-color,#1d2129)',
-      margin: '0 0 12px', boxSizing: 'border-box',
-    });
     sel.addEventListener('change', () => {
       const phone = sel.value;
       if (!phone) return;
-      const config = withDefaults({ ...this._config, accounts: [...(this._config?.accounts || []), { phone }] });
-      this._config = config;
-      this._form.data = config;
-      this.dispatchEvent(new CustomEvent('config-changed', {
-        detail: { config },
-        bubbles: true,
-        composed: true,
-      }));
       sel.value = '';
+      this._emit(withDefaults({ ...this._config, accounts: [...(this._config?.accounts || []), { phone }] }));
+    });
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.textContent = '手动添加';
+    addBtn.addEventListener('click', () => {
+      const p = (window.prompt('输入 11 位手机号') || '').replace(/\D/g, '');
+      if (!p) return;
+      if (!/^\d{11}$/.test(p)) { window.alert('手机号格式不正确'); return; }
+      const exists = (this._config?.accounts || []).some((a) => String(a.phone || '').replace(/\D/g, '') === p);
+      if (exists) { window.alert('该账号已存在'); return; }
+      this._emit(withDefaults({ ...this._config, accounts: [...(this._config?.accounts || []), { phone: p }] }));
+    });
+    addRow.append(sel, addBtn);
+    const chipsBox = document.createElement('div');
+    chipsBox.className = 'acc-chips';
+    secAcc.append(tAcc, addRow, chipsBox);
+
+    // —— 分组 ha-form ——
+    this._forms = [];
+    const formSecs = EDITOR_SECTIONS.map(({ title, schema }) => {
+      const sec = document.createElement('div');
+      const t = document.createElement('div');
+      t.className = 'sec-title';
+      t.textContent = title;
+      const form = document.createElement('ha-form');
+      form.schema = schema;
+      form.computeLabel = (s) => (s.type === 'grid' ? '' : (s.label || s.name));
+      form.hass = this._hass || {};
+      form.addEventListener('value-changed', (ev) => {
+        ev.stopPropagation();
+        this._emit(withDefaults({ ...this._config, ...ev.detail.value }));
+      });
+      sec.append(t, form);
+      this._forms.push(form);
+      return sec;
     });
 
-    const form = document.createElement('ha-form');
-    form.schema = EDITOR_SCHEMA;
-    form.computeLabel = (schema) => schema.label || schema.name;
-    form.hass = this._hass || {};
-    form.addEventListener('value-changed', (ev) => {
-      ev.stopPropagation();
-      const value = ev.detail?.value || {};
-      const config = withDefaults(value);
-      this._config = config;
-      this.dispatchEvent(new CustomEvent('config-changed', {
-        detail: { config },
-        bubbles: true,
-        composed: true,
-      }));
-    });
-
-    wrap.append(hint, sel, form);
-    this.appendChild(wrap);
+    wrap.append(secAcc, ...formSecs);
+    this.append(style, wrap);
+    this._wrap = wrap;
     this._sel = sel;
-    this._form = form;
+    this._chips = chipsBox;
+    this._updatePicker();
   }
 
   _updatePicker() {
-    if (!this._sel) return;
+    if (!this._sel || !this._chips) return;
     const states = this._hass?.states || {};
     const phones = new Set();
     Object.keys(states).forEach((id) => {
       const m = id.match(/^sensor\.(\d{11})_balance$/);
       if (m) phones.add(m[1]);
     });
-    const existing = new Set((this._config?.accounts || []).map((a) => String(a.phone || '').replace(/\D/g, '')));
+    const accounts = this._config?.accounts || [];
+    const existing = new Set(accounts.map((a) => String(a.phone || '').replace(/\D/g, '')));
     const avail = [...phones].filter((p) => !existing.has(p));
+
     const sel = this._sel;
     sel.innerHTML = '';
     const ph = document.createElement('option');
     ph.value = '';
     ph.selected = true;
-    ph.textContent = avail.length ? '点击添加集成账号…' : '未发现集成账号（可在下方手动输入手机号）';
     ph.disabled = true;
+    ph.textContent = avail.length ? '选择集成账号添加…' : '无更多集成账号';
     sel.appendChild(ph);
     avail.forEach((p) => {
       const isp = states[`sensor.${p}_phone`]?.attributes?.['运营商'] || '';
@@ -617,6 +675,32 @@ class ChinaCommCardEditor extends HTMLElement {
       sel.appendChild(o);
     });
     sel.disabled = avail.length === 0;
+
+    const box = this._chips;
+    box.innerHTML = '';
+    if (accounts.length === 0) {
+      const tip = document.createElement('span');
+      tip.className = 'acc-empty';
+      tip.textContent = '尚未添加账号';
+      box.appendChild(tip);
+    }
+    accounts.forEach((a) => {
+      const p = String(a.phone || '').replace(/\D/g, '');
+      const chip = document.createElement('span');
+      chip.className = 'acc-chip';
+      const name = document.createElement('span');
+      name.textContent = a.name || (p ? p.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') : '未设置号码');
+      const rm = document.createElement('button');
+      rm.className = 'rm';
+      rm.type = 'button';
+      rm.textContent = '✕';
+      rm.title = '移除该账号';
+      rm.addEventListener('click', () => {
+        this._emit(withDefaults({ ...this._config, accounts: (this._config?.accounts || []).filter((x) => x !== a) }));
+      });
+      chip.append(name, rm);
+      box.appendChild(chip);
+    });
   }
 }
 
