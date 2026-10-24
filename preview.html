@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>china-comm-card 预览</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; transition: background .3s; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .tip { font-size: 12px; opacity: .6; margin-bottom: 16px; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+  .toolbar button { padding: 6px 16px; border-radius: 8px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; cursor: pointer; font-size: 13px; }
+  .toolbar button.on { background: #0b6ef3; color: #fff; border-color: #0b6ef3; }
+  .toolbar select { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font-size: 13px; }
+  #stage { width: 430px; padding: 16px; border-radius: 20px; transition: background .3s; }
+  body.light { background: #eef0f4; color: #1d2129; }
+  body.light #stage { background: #f2f3f7; }
+  body.dark { background: #0f1013; color: #e8eaf0; }
+  body.dark #stage {
+    background: #17181c;
+    --card-background-color: #1e1f24;
+    --primary-text-color: #e8eaf0;
+    --secondary-text-color: #9aa0ab;
+    --divider-color: rgba(255,255,255,.14);
+    --error-color: #ff5a52;
+    --success-color: #4cd471;
+    --warning-color: #ffb74d;
+    --ha-card-border-color: rgba(255,255,255,.08);
+  }
+</style>
+</head>
+<body class="light">
+  <h1>china-comm-card · 中国电信 / 中国联通 套餐卡片</h1>
+  <div class="tip">数据为 2026-10-23 真实快照 · 点击账号区块可弹出 more-info（在 HA 内）</div>
+  <div class="toolbar">
+    <button id="b-light" class="on">浅色</button>
+    <button id="b-dark">深色</button>
+    <span style="width:12px"></span>
+    <button id="b-ring" class="on">环形图</button>
+    <button id="b-bar">进度条</button>
+    <span style="width:12px"></span>
+    <select id="s-style" title="外观风格">
+      <option value="brand" selected>品牌卡头</option>
+      <option value="minimal">极简主题</option>
+      <option value="accent">运营商点缀</option>
+      <option value="classic">经典环形</option>
+    </select>
+  </div>
+  <div id="stage"><china-comm-card id="card"></china-comm-card></div>
+
+<script src="china-comm-card.js"></script>
+<script>
+const S = (state, attributes = {}) => ({ state, attributes });
+const STATES = {
+  // ============ 中国电信 17745135098 ============
+  'sensor.17745135098_phone': S('17745135098', {
+    '运营商': '中国电信', '卡槽角色': '主号 (主卡)', '主套餐名称': '畅享卡（29元）',
+    '名下宽带数量': '0 条', '名下副卡数量': '0 张', '归属省市': '黑龙江 哈尔滨',
+  }),
+  'sensor.17745135098_service': S('畅享卡（29元）', { '网络制式': '5G SA/NSA 极速网络', '融合类型': '家庭融合共享套餐' }),
+  'sensor.17745135098_balance': S('10.49', {
+    'unit_of_measurement': '元', '当前状态': '正常', '当前可用话费': '10.49 元', '欠费金额': '0.00 元',
+    '本月已消费': '29.10 元', '是否欠费': '否', '上月结转': null,
+    '历史10月出账': '29.1 元', '历史9月出账': '29 元', '历史8月出账': '29.1 元',
+    '历史7月出账': '29 元', '历史6月出账': '54 元', '历史5月出账': '29.3 元',
+  }),
+  'sensor.17745135098_charge': S('29.1', { 'unit_of_measurement': '元', '本月出账费用': '29.10 元', '计费周期': '2026年10月' }),
+  'sensor.17745135098_data': S('119.98', {
+    'unit_of_measurement': 'GB', '本月剩余流量': '119.98 GB', '本月已用流量': '0.02 GB',
+    '套餐流量总额': '120.00 GB', '剩余流量占比': '100.0%', '流量池类型': '家庭融合共享流量池',
+  }),
+  'sensor.17745135098_voice': S('61', {
+    'unit_of_measurement': '分钟', '套餐通话总额': '100 分钟', '本月已用时长': '39 分钟',
+    '本月剩余占比': '61%', '语音包1': '畅享卡（29元）-国内通话: 已用 39分钟 | 剩余 61分钟 | 共100分钟',
+  }),
+  'sensor.17745135098_points': S('0', { 'unit_of_measurement': '分', '可用积分': '0 分' }),
+  'sensor.17745135098_status': S('正常', { '是否欠费': '否', '当前话费': '10.49 元' }),
+  'sensor.17745135098_online': S('在线', { '轮询间隔': '30 分钟', '登录态': '有效' }),
+  'sensor.17745135098_updated': S('2026-10-23 23:56:14', { '轮询间隔': '30分钟自动更新' }),
+  'sensor.17745135098_calls': S('详单授权已过期 (需重新认证)', { '本月通话次数': 0, '详单授权状态': '未认证 (需二次认证)' }),
+
+  // ============ 中国联通 18523885098 ============
+  'sensor.18523885098_phone': S('18523885098', {
+    '运营商': '中国联通', '卡槽角色': '主号 (主卡)', '名下宽带数量': '1 条', '名下副卡数量': '3 张',
+    '名下宽带': '023****6644', '名下副卡': '185****8120, 166****2197, 186****7533',
+  }),
+  'sensor.18523885098_service': S('畅越冰激凌5G套餐239元', { '网络制式': '5G SA/NSA 极速网络', '融合类型': '家庭共享套餐' }),
+  'sensor.18523885098_balance': S('-115.52', {
+    'unit_of_measurement': '元', '当前状态': '欠费', '本月存入': '0.00 元', '本月消费': '247.00 元',
+    '上月结转': '131.48 元', '是否欠费': '是', '欠费金额': '115.52 元',
+  }),
+  'sensor.18523885098_data': S('142.38', {
+    'unit_of_measurement': 'GB', '本月剩余流量': '142.38 GB', '本月已用流量': '53.83 GB',
+    '套餐流量总额': '196.21 GB', '剩余流量占比': '72.6%', '流量池类型': '家庭融合共享流量池',
+    '本机 (185****5098)': '21.38 GB', '副卡 (185****8120)': '25.37 GB',
+    '副卡 (186****7533)': '6.29 GB', '副卡 (166****2197)': '0.79 GB',
+  }),
+  'sensor.18523885098_voice': S('1380', {
+    'unit_of_measurement': '分钟', '套餐通话总额': '1500 分钟', '本月已用时长': '120 分钟',
+    '本月剩余时长': '1380 分钟', '本月剩余占比': '92%',
+    '本机 (185****5098)': '120 分钟',
+  }),
+  'sensor.18523885098_sms_remain': S('0 条', { '套餐短信总额': '0 条', '本月已用短信': '0 条' }),
+  'sensor.18523885098_level': S('黑钻会员', { '积分': 610, '可用积分': '610 分', '套餐类型': '5G' }),
+  'sensor.18523885098_status': S('欠费', { '是否欠费': '是', '欠费金额': '115.52 元' }),
+  'sensor.18523885098_online': S('在线', { '轮询间隔': '10 分钟', '登录态': '有效' }),
+  'sensor.18523885098_updated': S('2026-10-23 23:56:31', { '轮询间隔': '10分钟自动更新' }),
+  'sensor.18523885098_calls': S('接听 17331372868 (1分27秒)', { '本月通话次数': 79, '最近一次通话': {} }),
+};
+
+const card = document.getElementById('card');
+const BASE_CONFIG = { title: '手机套餐', accounts: [{ phone: '17745135098' }, { phone: '18523885098' }] };
+const cur = { style: 'brand', gauge: 'ring' };
+const apply = () => card.setConfig({ ...BASE_CONFIG, style: cur.style, gauges: { style: cur.gauge, data: true, voice: true } });
+apply();
+card.hass = { states: STATES, themes: { darkMode: false }, locale: { language: 'zh-cn' } };
+
+const setMode = (mode) => {
+  document.body.className = mode;
+  card.hass = { ...card.hass, themes: { darkMode: mode === 'dark' } };
+  document.getElementById('b-light').classList.toggle('on', mode === 'light');
+  document.getElementById('b-dark').classList.toggle('on', mode === 'dark');
+};
+const setGauge = (style) => {
+  cur.gauge = style;
+  apply();
+  document.getElementById('b-ring').classList.toggle('on', style === 'ring');
+  document.getElementById('b-bar').classList.toggle('on', style === 'bar');
+};
+document.getElementById('b-light').onclick = () => setMode('light');
+document.getElementById('b-dark').onclick = () => setMode('dark');
+document.getElementById('b-ring').onclick = () => setGauge('ring');
+document.getElementById('b-bar').onclick = () => setGauge('bar');
+document.getElementById('s-style').onchange = (e) => { cur.style = e.target.value; apply(); };
+</script>
+</body>
+</html>
